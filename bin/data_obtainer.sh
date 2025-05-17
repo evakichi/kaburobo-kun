@@ -9,5 +9,5 @@ if ! . ../.env; then
     exit 10;
 fi
 
-python3 ../py/data_obtainer.py
+python3 ../py/data_obtainer.py ${1}
 

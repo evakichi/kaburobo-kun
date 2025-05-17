@@ -3,7 +3,8 @@ import os
 import json
 from multiprocessing import Process,Queue
 import pandas as pd
-import numpy as nu
+import datetime as dt
+from datetime import timedelta
 
 class TokenTaker:
 
@@ -56,11 +57,12 @@ class QuantsTaker:
         self.get(id_token,calendar,brand)
         
     def get(self,id_token,calendar,brand):
-        packages = list()
+        self.packages = list()
         brand_codes = [code['Code'] for code in brand]
         code_length = len(brand_codes)
         print(f"get {code_length} codes.")
-        for outer_iter in range(code_length//self.num_of_threads):
+        #for outer_iter in range(code_length//self.num_of_threads):
+        for outer_iter in range(10):
             process_list = list()
             queue_list = list()
             for iter in range(self.num_of_threads):
@@ -69,7 +71,7 @@ class QuantsTaker:
                 process_list.append(Process(target=self.get_in_parallel,args=(id_token,current_iter,calendar,brand_codes[current_iter],queue)))
                 queue_list.append(queue)
             [p.start() for p in process_list]
-            [packages.append(q.get()) for q in queue_list]
+            [self.packages.append(q.get()) for q in queue_list]
             [p.join() for p in process_list]
 
         process_list = list()
@@ -79,7 +81,7 @@ class QuantsTaker:
             process_list.append(Process(target=self.get_in_parallel,args=(id_token,iter,calendar,brand_codes[iter],queue)))
             queue_list.append(queue)
         [p.start() for p in process_list]
-        [packages.append(q.get()) for q in queue_list]
+        [self.packages.append(q.get()) for q in queue_list]
         [p.join() for p in process_list]
 
     def get_in_parallel(self,id_token,num,calendar,brand_code,queue):
@@ -146,15 +148,45 @@ class QuantsTaker:
                 "AdjustmentLow":adjustment_low,"AdjustmentClose":adjustment_close,"AdjustmentVolume":adjustment_volume}
         df = pd.DataFrame(data,columns=["Date","Open","High","Low","Close","UpperLimit","LowerLimit","Volume","TurnoverValue","AdjustmentFactor","AdjustmentOpen","AdjustmentHigh",
                 "AdjustmentLow","AdjustmentClose","AdjustmentVolume"])
+        df["Date"] = pd.to_datetime(df["Date"])
         package = {"Code":brand_code,"Data":df}
-        #print(df)
         queue.put(package)
 
 
 
+class Main:
 
-if __name__=="__main__":
-    token_taker = TokenTaker()
-    brand_taker = BrandTaker(token_taker.id_token)
-    calender_taker = CalenderTaker(token_taker.id_token)
-    quants_taker = QuantsTaker(token_taker.id_token,calender_taker.calendar,brand_taker.brands)
+   def __init__(self):
+        token_taker = TokenTaker()
+        brand_taker = BrandTaker(token_taker.id_token)
+        calender_taker = CalenderTaker(token_taker.id_token)
+        quants_taker = QuantsTaker(token_taker.id_token,calender_taker.calendar,brand_taker.brands)
+        packages = quants_taker.packages
+        
+        today = dt.datetime.today()
+        print(today)
+        if today.hour <= 18:
+            today = today - timedelta(days=1)
+        working_day = list()
+        for cal in calender_taker.calendar["trading_calendar"]:
+            if cal["HolidayDivision"] not in ["0"]:
+                working_day.append(dt.datetime.strptime(cal["Date"], '%Y-%m-%d'))
+        current = today
+        for day in working_day:
+            if day <= today:
+                previous = current
+                current = day
+        print(current,previous)
+        for package in packages:
+            tmp_df = package["Data"]
+            #print(tmp_df)
+            tmp_df = tmp_df[tmp_df["Date"] <= today]
+            df = tmp_df[tmp_df["Date"] >= previous]
+            #print(df)
+            dropna = df.dropna(how="any")
+            if dropna.shape[0] < 2:
+                print(package["Code"]+" is not a target")
+            else:
+                print(package["Code"])
+
+main = Main()
