@@ -27,7 +27,7 @@ class TokenTaker:
 class BrandTaker:
 
     def __init__(self,id_token):
-        self.info = self.get(id_token)
+        self.brands = self.get(id_token)
 
     def get(self,id_token):
         headers = {'Authorization': f"Bearer {id_token}"}
@@ -47,18 +47,19 @@ class CalenderTaker:
 
 class QuantsTaker:
 
-    def __init__(self,id_token,calendar,brand_info):
+    def __init__(self,id_token,calendar,brand):
         self.id_token = id_token
-        self.brand_info = brand_info
+        self.brand = brand
         self.calendar = calendar
         self.num_of_threads = int(os.getenv('NUM_OF_THREADS'))
 
-        self.get(id_token,calendar,brand_info)
+        self.get(id_token,calendar,brand)
         
-    def get(self,id_token,calendar,brand_info):
-        dfs = list()
-        brand_codes = [code['Code'] for code in brand_info]
+    def get(self,id_token,calendar,brand):
+        packages = list()
+        brand_codes = [code['Code'] for code in brand]
         code_length = len(brand_codes)
+        print(f"get {code_length} codes.")
         for outer_iter in range(code_length//self.num_of_threads):
             process_list = list()
             queue_list = list()
@@ -68,7 +69,7 @@ class QuantsTaker:
                 process_list.append(Process(target=self.get_in_parallel,args=(id_token,current_iter,calendar,brand_codes[current_iter],queue)))
                 queue_list.append(queue)
             [p.start() for p in process_list]
-            [dfs.append(q.get()) for q in queue_list]
+            [packages.append(q.get()) for q in queue_list]
             [p.join() for p in process_list]
 
         process_list = list()
@@ -78,10 +79,11 @@ class QuantsTaker:
             process_list.append(Process(target=self.get_in_parallel,args=(id_token,iter,calendar,brand_codes[iter],queue)))
             queue_list.append(queue)
         [p.start() for p in process_list]
-        [dfs.append(q.get()) for q in queue_list]
+        [packages.append(q.get()) for q in queue_list]
         [p.join() for p in process_list]
 
     def get_in_parallel(self,id_token,num,calendar,brand_code,queue):
+        print("get in parallel",num,brand_code)
         headers = {'Authorization': f'Bearer {id_token}'}
         daily_quotes_json = requests.get(f"https://api.jquants.com/v1/prices/daily_quotes?code={brand_code}", headers=headers).json()
         daily_quotes = daily_quotes_json["daily_quotes"]
@@ -144,8 +146,9 @@ class QuantsTaker:
                 "AdjustmentLow":adjustment_low,"AdjustmentClose":adjustment_close,"AdjustmentVolume":adjustment_volume}
         df = pd.DataFrame(data,columns=["Date","Open","High","Low","Close","UpperLimit","LowerLimit","Volume","TurnoverValue","AdjustmentFactor","AdjustmentOpen","AdjustmentHigh",
                 "AdjustmentLow","AdjustmentClose","AdjustmentVolume"])
+        package = {"Code":brand_code,"Data":df}
         #print(df)
-        queue.put(df)
+        queue.put(package)
 
 
 
@@ -154,5 +157,4 @@ if __name__=="__main__":
     token_taker = TokenTaker()
     brand_taker = BrandTaker(token_taker.id_token)
     calender_taker = CalenderTaker(token_taker.id_token)
-    print(calender_taker.calendar)
-    quants_taker = QuantsTaker(token_taker.id_token,calender_taker.calendar,brand_taker.info)
+    quants_taker = QuantsTaker(token_taker.id_token,calender_taker.calendar,brand_taker.brands)
