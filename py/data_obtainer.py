@@ -178,15 +178,16 @@ class Main:
                 current = day
         print(current,previous)
         for package in packages:
-            tmp_df = package["Data"]
+            df = package["Data"]
             #print(tmp_df)
-            tmp_df = tmp_df[tmp_df["Date"] <= today]
-            df = tmp_df[tmp_df["Date"] >= previous]
+            df = df[df["Date"] <= today]
+            df = df[df["Date"] >= previous]
             #print(df)
             dropna = df.dropna(how="any")
-            if dropna.shape[0] < 2:
-                print(package["Code"]+" is not a target")
-            else:
+            if dropna.shape[0] == 2:
                 print(package["Code"])
+                print(dropna)
+            else:
+                print(package["Code"]+" is not a target")
 
 main = Main()
