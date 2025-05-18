@@ -68,8 +68,8 @@ class QuantsTaker:
     def get(self,id_token,calendar,brands):
         self.packages = list()
         code_length = len(brands)
-        #for outer_iter in range(code_length//self.num_of_threads):
-        for outer_iter in range(10):
+        #for outer_iter in range(10):
+        for outer_iter in range(code_length//self.num_of_threads):
             process_list = list()
             queue_list = list()
             for iter in range(self.num_of_threads):
@@ -184,7 +184,7 @@ class Main:
             if day <= today:
                 previous = current
                 current = day
-        print(current,previous)
+        #print(current,previous)
         self.sell_timing = list()
         self.buy_timing = list()
         for package in packages:
@@ -241,14 +241,14 @@ class Main:
         sell_timing_between_3000_and_30000 = sell_timing_df[sell_timing_df["Close"] >= 3000.0]
         sell_timing_between_3000_and_30000 = sell_timing_between_3000_and_30000[sell_timing_between_3000_and_30000["Close"] < 30000.0].head(3)
         sell_timing_over_30000 = sell_timing_df[sell_timing_df["Close"] >= 30000.0].head(3)
-        print("Sell timing < 500.0")
-        print(sell_timing_less_than_500)
-        print("500 <= Sell timing < 3000.0")
-        print(sell_timing_between_500_and_3000)
-        print("3000.0 <= Sell timing < 30000.0")
-        print(sell_timing_between_3000_and_30000)
-        print("Sell timing >= 30000.0")
-        print(sell_timing_over_30000)
+        #print("Sell timing < 500.0")
+        #print(sell_timing_less_than_500)
+        #print("500 <= Sell timing < 3000.0")
+        #print(sell_timing_between_500_and_3000)
+        #print("3000.0 <= Sell timing < 30000.0")
+        #print(sell_timing_between_3000_and_30000)
+        #print("Sell timing >= 30000.0")
+        #print(sell_timing_over_30000)
 
         #print("Dead Cross")
         brand_code = list()
@@ -267,14 +267,15 @@ class Main:
         buy_timing_between_3000_and_30000 = buy_timing_df[buy_timing_df["Close"] >= 3000.0]
         buy_timing_between_3000_and_30000 = buy_timing_between_3000_and_30000[buy_timing_between_3000_and_30000["Close"] < 30000.0].head(3)
         buy_timing_over_30000 = buy_timing_df[buy_timing_df["Close"] >= 30000.0].head(3)
-        print("Buy timing < 500.0")
-        print(buy_timing_less_than_500)
-        print("500.0 <= Buy timing < 3000.0")
-        print(buy_timing_between_500_and_3000)
-        print("3000.0 <= Buy timing < 30000.0")
-        print(buy_timing_between_3000_and_30000)
-        print("Buy timing >= 30000.0")
-        print(buy_timing_over_30000)
+        #print("Buy timing < 500.0")
+        #print(buy_timing_less_than_500)
+        #print("500.0 <= Buy timing < 3000.0")
+        #print(buy_timing_between_500_and_3000)
+        #print("3000.0 <= Buy timing < 30000.0")
+        #print(buy_timing_between_3000_and_30000)
+        #print("Buy timing >= 30000.0")
+        #print(buy_timing_over_30000)
+        
         now = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
         dir_path = pathlib.Path(os.path.join("/tmp/",now))
         dir_path.mkdir()
@@ -303,10 +304,10 @@ class Main:
 
     def print_image(self,dir_path,packages,current,results):
         three_monthes_ago = current - timedelta(days=90)
-        print(current,three_monthes_ago)
+        #print(current,three_monthes_ago)
         plotstyle = mpf.make_mpf_style(base_mpf_style='default', rc={"font.family":'IPAexGothic',"font.size":'8'})
         for result in results:
-            print(result["Kind"])
+            #print(result["Kind"])
             brand_codes = result["Data"]["BrandCode"]
             for brand_code in brand_codes:
                 for package in packages:
@@ -332,7 +333,7 @@ class Main:
         for result in results:
             message += f"{result['Kind']}({result['KindEnglish']})\n"
             data = result["Data"]
-            print(data)
+            #print(data)
             if data.shape[0] == 0:
                 message += "該当無し。\n"
             for rank in range(data.shape[0]):
@@ -365,10 +366,10 @@ class Main:
                     )
                     message_header.attach(attachment)
 
-        #server = SMTP_SSL(os.getenv('KABUROBO_KUN_MAIL_HOST'), 465, context=ssl.create_default_context())
-        #server.login(os.getenv('KABUROBO_KUN_MAIL_ACCOUNT'), os.getenv('KABUROBO_KUN_MAIL_PASSWORD'))
-        #server.send_message(message_header)
+        server = SMTP_SSL(os.getenv('KABUROBO_KUN_MAIL_HOST'), 465, context=ssl.create_default_context())
+        server.login(os.getenv('KABUROBO_KUN_MAIL_ACCOUNT'), os.getenv('KABUROBO_KUN_MAIL_PASSWORD'))
+        server.send_message(message_header)
 
         # 閉じる
-        #server.quit()
+        server.quit()
 main = Main()
