@@ -9,5 +9,5 @@ if ! . ../.env; then
     exit 10;
 fi
 
-python3 ../py/timing_tunner.py ${1}
+python3 ../py/timing_tuner.py
 
